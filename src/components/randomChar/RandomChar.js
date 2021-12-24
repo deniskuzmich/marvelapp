@@ -1,56 +1,34 @@
 import './randomChar.scss';
 import mjolnir from '../../resources/img/mjolnir.png';
 
-import { Component } from 'react';
-import MarvelService from '../../services/MarvelService';
+import { useState, useEffect } from 'react';
+import useMarvelService from '../../services/MarvelService';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 
 
-class RandomChar extends Component {
-    state = {
-        char: {},
-        loading: true, //true -персонаж загружается, запускается spinner, когда загрузился - loading: false 
-        error : false
+const RandomChar = () => {
+
+    const [char, setChar] = useState({});
+    const {loading, error, getCharacter, clearError} = useMarvelService();
+
+    useEffect(() => {
+        updateChar();
+    }, []) //ВЫЗЫВАЕМ ЭТУ ФУНКЦИЮ ПОСЛЕ ЗАГРУЗКИ КОМПОНЕНТА
+
+
+    const onCharLoaded = (char) => { //загружаем персонажа
+        setChar(char);
     }
 
-    marvelService = new MarvelService();
 
-    componentDidMount() { //ВЫЗЫВАЕМ ЭТУ ФУНКЦИЮ ПОСЛЕ ЗАГРУЗКИ КОМПОНЕНТА
-        this.updateChar();
-    }
-
-    onCharLoaded = (char) => { //загружаем персонажа
-        if (!char.description) {
-            char.description = 'Description is none';
-        } else if (char.description.length > 200) {
-            char.description = char.description.slice(0, 200) + '...'
-        }
-        this.setState({char, loading: false})//char: char 
-    }
-
-    onCharLoading = () => { //Включаем spinner при обновлении персонажа
-        this.setState({loading: true})
-    }
-
-    onError = () => { //сообщение об ошибке ( если такого персонажа нет)
-        this.setState({
-            loading: false,
-            error: true
-        })
-    }
-
-    updateChar = () => {
+    const updateChar = () => {
+        clearError();
         const id = Math.floor(Math.random() * (1011400 - 1011000) + 1011000); //выбираем случаный id персонажа
-        this.onCharLoading(); //вызываем spinner, пока персонаж загружается
-        this.marvelService
-            .getCharacter(id) //вызываем getCharacter из MarvelService передавая id 
-            .then(this.onCharLoaded) //когда персонаж получен загружаем его в state вызывая onCharLoaded
-            .catch(this.onError) // вызываем onError , если получаем ошибку( такого персонажа нет)
+        getCharacter(id) //вызываем getCharacter из MarvelService передавая id 
+            .then(onCharLoaded); //когда персонаж получен загружаем его в state вызывая onCharLoaded
     }
 
-    render() {
-        const {char, loading, error} = this.state; //вытаскиваем нужные данные из state
         const errorMessage = error ? <ErrorMessage /> : null; 
         const spinner = loading ? <Spinner /> : null;
         const content = !(loading || error) ? <View char={char}/> : null;
@@ -69,13 +47,12 @@ class RandomChar extends Component {
                         Or choose another one
                     </p>
                     <button className="button button__main">
-                        <div onClick={this.updateChar} className="inner">try it</div>
+                        <div onClick={updateChar} className="inner">try it</div>
                     </button>
                     <img src={mjolnir} alt="mjolnir" className="randomchar__decoration"/>
                 </div>
             </div>
         )
-    }
 }
 
 const View = ({char}) => {
